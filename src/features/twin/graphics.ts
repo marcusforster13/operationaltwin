@@ -1,0 +1,7 @@
+import * as THREE from 'three';
+import type {Vec3} from '../../types/maps';
+import type {Mission} from '../../types/domain';
+import {missionRoute,waypointPosition} from '../mission/mission';
+export function line(points:Vec3[],color:number){return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(p.x,p.y,p.z))),new THREE.LineBasicMaterial({color,depthTest:false}));}
+export function label(text:string,position:Vec3,size:number,color='#76ebff'){const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d')!;ctx.fillStyle='#081218dd';ctx.fillRect(0,0,256,64);ctx.fillStyle=color;ctx.font='bold 28px sans-serif';ctx.textAlign='center';ctx.fillText(text,128,42);const texture=new THREE.CanvasTexture(canvas);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false}));sprite.position.copy(position);sprite.scale.set(size*4,size,1);return sprite;}
+export function drawMission(m:Mission,size:number){const group=new THREE.Group();const points=missionRoute(m);if(points.length>1)group.add(line(points,0x49d8ed));for(const [i,w] of m.waypoints.entries()){const p=waypointPosition(w);const dot=new THREE.Mesh(new THREE.SphereGeometry(size*.25,8,6),new THREE.MeshBasicMaterial({color:0x59def0,depthTest:false}));dot.position.copy(p);group.add(dot,line([w.ground,p],0x4a8292),label(`${i===0?'BASE / ':''}WP${String(i+1).padStart(2,'0')}`,{...p,y:p.y+size*1.2},size));}return group;}

@@ -1,0 +1,4 @@
+import {it,expect} from 'vitest';
+import {RecordedTelemetryProvider} from './RecordedTelemetryProvider';
+import type {RecordedSession} from '../../types/domain';
+it('replays stored positions, supports seeking, rates, pause and completion',()=>{const frames=[0,1000,2000].map((t,i)=>({mapId:'a',droneId:'d',timestamp:t,position:{x:i*7,y:3,z:4},altitude:3,speed:7,heading:90,battery:99,connection:'online' as const}));const session:RecordedSession={id:'s',mapId:'a',droneId:'d',mode:'simulation',mission:{id:'m',mapId:'a',waypoints:[],speed:999,returnToBase:false},frames,events:[],startedAt:0,endedAt:2000};const p=new RecordedTelemetryProvider(session);let x=-1;p.subscribe(f=>x=f.position.x);p.seek(1500);expect(x).toBe(7);p.play();p.pause();p.advance(500);expect(p.offset).toBe(1500);p.play();p.setRate(2);p.advance(250);expect(x).toBe(14);expect(p.playing).toBe(false);p.seek(0);expect(x).toBe(0);});

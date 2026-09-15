@@ -1,0 +1,4 @@
+import {it,expect} from 'vitest';
+import {Recorder} from './Recorder';
+import {MemorySessionRepository} from '../../services/persistence/SessionRepository';
+it('records immutable frames and lifecycle events with map isolation',()=>{const r=new Recorder();const mission={id:'m',mapId:'a',waypoints:[],speed:1,returnToBase:false};r.start(mission,[],100);const f={mapId:'a',droneId:'drone-02',timestamp:1,position:{x:1,y:2,z:3},altitude:2,speed:1,heading:0,battery:100,connection:'online' as const};r.frame(f,200);f.position.x=99;r.event('Pause',undefined,250);r.event('Resume',undefined,300);expect(()=>r.frame({...f,mapId:'b'})).toThrow();const s=r.stop(400)!;expect(s.frames[0].position.x).toBe(1);expect(s.events.map(e=>e.type)).toEqual(['Start','Pause','Resume','Stop']);const repo=new MemorySessionRepository();repo.save(s);expect(repo.list('b')).toEqual([]);expect(repo.list('a')).toHaveLength(1);});

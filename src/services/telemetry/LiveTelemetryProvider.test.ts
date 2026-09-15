@@ -1,0 +1,13 @@
+import {describe,it,expect,vi} from 'vitest';
+import {MAPS} from '../../config/maps';
+import {LiveTelemetryProvider,normalizeBackendTelemetry,type NormalizedTelemetryTransport} from './LiveTelemetryProvider';
+import {subscribeToMap} from './subscribeToMap';
+
+const payload={mapId:'tabajaras',droneId:'test-drone',timestamp:1000,position:{x:1,y:2,z:3},connection:'online'};
+function fixture(){let receive:(value:unknown)=>void=()=>{};const transport:NormalizedTelemetryTransport={connect:vi.fn(async()=>{}),disconnect:vi.fn(async()=>{}),subscribe(cb){receive=cb;return()=>{receive=()=>{};};}};const map=structuredClone(MAPS[0]);Object.assign(map.geo,{fieldCalibrated:true,altitudeReferenceValidated:true,metersPerUnit:1,northRotationY:0,altitudeDatum:'TEST ONLY'});return{map,transport,emit:(value:unknown)=>receive(value)};}
+describe('future normalized live boundary',()=>{
+ it('remains unavailable without backend and validated calibration',async()=>{await expect(new LiveTelemetryProvider(MAPS[0]).connect()).rejects.toThrow('backend');const f=fixture();await expect(new LiveTelemetryProvider(MAPS[0],f.transport).connect()).rejects.toThrow('calibração');expect(f.transport.connect).not.toHaveBeenCalled();});
+ it('keeps missing measurements null and rejects GPS-only, wrong-map and invalid numeric frames',()=>{const frame=normalizeBackendTelemetry(payload,'tabajaras');expect(frame).toMatchObject({speed:null,altitude:null,battery:null,heading:null});for(const changed of [{mapId:'cantagalo'},{position:undefined},{battery:101},{position:{x:NaN,y:0,z:0}}])expect(()=>normalizeBackendTelemetry({...payload,...changed},'tabajaras')).toThrow();});
+ it('feeds the common subscription, rejects out-of-order frames and detaches',async()=>{const f=fixture(),errors=vi.fn(),cb=vi.fn();const provider=new LiveTelemetryProvider(f.map,f.transport,errors);const stop=subscribeToMap(provider,'tabajaras',cb);await provider.connect();f.emit(payload);f.emit({...payload,timestamp:999});f.emit({...payload,mapId:'cantagalo'});expect(cb).toHaveBeenCalledTimes(1);expect(errors).toHaveBeenCalledTimes(2);stop();f.emit({...payload,timestamp:1001});expect(cb).toHaveBeenCalledTimes(1);await provider.disconnect();expect(f.transport.disconnect).toHaveBeenCalledOnce();});
+ it('does not leave a transport connected after cancelling pending connect',async()=>{const f=fixture();let resolve!:()=>void;f.transport.connect=()=>new Promise<void>(done=>{resolve=done;});const provider=new LiveTelemetryProvider(f.map,f.transport);const cb=vi.fn();provider.subscribe(cb);const pending=provider.connect();await provider.disconnect();resolve();await pending;f.emit(payload);expect(cb).not.toHaveBeenCalled();expect(f.transport.disconnect).toHaveBeenCalledTimes(2);});
+});

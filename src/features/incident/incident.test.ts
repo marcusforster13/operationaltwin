@@ -1,0 +1,3 @@
+import {it,expect} from 'vitest';
+import {compareResources} from './incident';
+it('ranks available resources by 3D distance and isolates maps',()=>{const r=compareResources({id:'047',mapId:'a',priority:'alta',timestamp:0,position:{x:0,y:0,z:0}},[{id:'far',name:'far',mapId:'a',kind:'team',position:{x:3,y:4,z:0},available:true,simulatedSpeed:1},{id:'busy',name:'busy',mapId:'a',kind:'team',position:{x:0,y:0,z:0},available:false,simulatedSpeed:1},{id:'other',name:'other',mapId:'b',kind:'drone',position:{x:0,y:0,z:0},available:true,simulatedSpeed:1}],null);expect(r.map(x=>x.id)).toEqual(['far','busy']);expect(r[0].distance).toBe(5);expect(r[0].eta).toBe(5);});

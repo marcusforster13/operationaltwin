@@ -1,0 +1,3 @@
+import type {Incident,Resource,DroneTelemetry} from '../../types/domain';
+import {distance} from '../../services/telemetry/MockTelemetryProvider';
+export function compareResources(incident:Incident,resources:Resource[],telemetry:DroneTelemetry|null){return resources.filter(r=>r.mapId===incident.mapId).map(r=>{const position=r.kind==='drone'&&telemetry?.mapId===r.mapId?telemetry.position:r.position;const d=distance(position,incident.position);return {...r,position,distance:d,eta:r.simulatedSpeed>0?d/r.simulatedSpeed:null};}).sort((a,b)=>Number(b.available)-Number(a.available)||a.distance-b.distance);}
