@@ -67,3 +67,13 @@ Cantagalo tem 3,05 milhões de triângulos e 1.693 texturas. Nesta máquina fora
 ## Integração real futura
 
 Veja [BACKEND-CONTRACT.md](BACKEND-CONTRACT.md). Validar pontos de controle, escala, eixos e referência vertical por mapa; depois implementar o backend realtime e seu adaptador oficial DJI. Credenciais, MQTT e payload do fabricante ficam no servidor. O frontend deverá receber apenas o contrato normalizado, sem substituir campos desconhecidos por dados simulados. Confirmar equipamento, firmware, Pilot 2 e RTK na etapa de integração. Vídeo vem depois da validação de telemetria e georreferenciamento.
+
+## Calibração horizontal (V1.1)
+
+Abra uma localidade → Calibração → + Ponto de controle e clique na superfície. Preencha latitude/longitude WGS84 em graus decimais e a fonte real de cada ponto. Use pelo menos 3 pontos de ajuste não alinhados e pontos adicionais de verificação independente. O ajuste estima escala, rotação, translação e sinal do eixo Z, mostrando RMSE e resíduos por ponto. A configuração exportada explicita a fórmula.
+
+Salvar rascunho grava apenas neste navegador, por mapId; use Carregar salvo ao retornar. Exporte JSON para backup ou transferência. A importação rejeita outro mapa ou referencial incompatível. Salve antes de trocar de mapa ou recarregar. Máximo: 20 pontos.
+
+O candidato NÃO altera o mapa operacional. A projeção horizontal usa o elipsoide WGS84 (h=0 matemático, não altitude medida), limitada a 20 km da origem documentada. Não resolve inclinação, deformações locais ou datum vertical. Validação de campo e altitude continuam pendentes; RMSE baixo não certifica precisão. A origem e a transformação do modelo fazem parte da identificação do referencial do rascunho.
+
+Validação desta etapa: 28 testes em 10 arquivos; TypeScript e build passaram. Navegador: captura de três pontos, salvar/carregar, ajuste com dados sintéticos explicitamente identificados e exportação/reimportação JSON passaram; console sem erros. Os dados sintéticos foram removidos da tela de teste.
