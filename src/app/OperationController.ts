@@ -1,18 +1,19 @@
 import {subscribeToMap} from '../services/telemetry/subscribeToMap';
 import {RecordedTelemetryProvider} from '../services/telemetry/RecordedTelemetryProvider';
 import {Recorder} from '../features/replay/Recorder';
-import {sessionRepository} from '../services/persistence/SessionRepository';
+import {sessionRepository,type StorageStatus} from '../services/persistence/SessionRepository';
 import type {Mission,DroneTelemetry,Incident,Resource,RecordedSession} from '../types/domain';
 import type {Vec3} from '../types/maps';
 import {MockTelemetryProvider} from '../services/telemetry/MockTelemetryProvider';
 import {missionRoute,newMission} from '../features/mission/mission';
-export type OperationState={mission:Mission;telemetry:DroneTelemetry|null;trail:Vec3[];status:'idle'|'flying'|'paused'|'completed';error:string;incidents:Incident[];resources:Resource[];vision:boolean;yaw:number;pitch:number;mode:'simulation'|'recorded';replay:{offset:number;duration:number;playing:boolean;rate:number;session:RecordedSession}|null;recording:boolean;sessions:RecordedSession[]};
+export type OperationState={storageStatus:StorageStatus;mission:Mission;telemetry:DroneTelemetry|null;trail:Vec3[];status:'idle'|'flying'|'paused'|'completed';error:string;incidents:Incident[];resources:Resource[];vision:boolean;yaw:number;pitch:number;mode:'simulation'|'recorded';replay:{offset:number;duration:number;playing:boolean;rate:number;session:RecordedSession}|null;recording:boolean;sessions:RecordedSession[]};
 export class OperationController{
  replayProvider:RecordedTelemetryProvider|null=null;private replayUnsubscribe:(()=>void)|null=null;
  readonly recorder=new Recorder();
+ private repositoryUnsubscribe:()=>void;
  private epoch=0;private disposed=false;private lastReceived=0;private healthTimer:ReturnType<typeof setInterval>|null=null;
  private listeners=new Set<()=>void>();private unsubscribe:()=>void;readonly provider:MockTelemetryProvider;state:OperationState;
- constructor(readonly mapId:string){this.state={mission:newMission(mapId),telemetry:null,trail:[],status:'idle',error:'',incidents:[],resources:[],vision:false,yaw:0,pitch:-45,mode:'simulation',replay:null,recording:false,sessions:sessionRepository.list(mapId)};this.provider=new MockTelemetryProvider(mapId);this.unsubscribe=subscribeToMap(this.provider,mapId,frame=>this.receive(frame));}
+ constructor(readonly mapId:string){this.state={storageStatus:sessionRepository.status,mission:newMission(mapId),telemetry:null,trail:[],status:'idle',error:'',incidents:[],resources:[],vision:false,yaw:0,pitch:-45,mode:'simulation',replay:null,recording:false,sessions:sessionRepository.list(mapId)};this.repositoryUnsubscribe=sessionRepository.subscribe(()=>this.update({sessions:sessionRepository.list(mapId),storageStatus:sessionRepository.status}));this.provider=new MockTelemetryProvider(mapId);this.unsubscribe=subscribeToMap(this.provider,mapId,frame=>this.receive(frame));}
  subscribe=(cb:()=>void)=>{this.listeners.add(cb);return()=>{this.listeners.delete(cb);};};getSnapshot=()=>this.state;
  protected update(patch:Partial<OperationState>){if(this.disposed)return;this.state={...this.state,...patch};this.listeners.forEach(cb=>cb());}
  protected receive(frame:DroneTelemetry){if(frame.mapId!==this.mapId||this.state.mode==='recorded'||this.disposed)return;this.lastReceived=Date.now();if(this.state.recording)this.recorder.frame(frame);this.update({telemetry:frame,status:frame.state??'idle',trail:frame.state==='paused'?this.state.trail:[...this.state.trail.slice(-9999),{...frame.position}]});if(frame.state==='completed'){this.endRecording();this.stopHealth();}else if(this.recorder.session&&this.recorder.session.frames.length>=18000&&this.state.recording){this.stop();this.reportError('Limite de 30 minutos de gravação atingido; sessão salva.');}}
@@ -31,7 +32,7 @@ export class OperationController{
  reset(){this.stop();this.update({telemetry:null,trail:[],status:'idle'});}
  openReplay(session:RecordedSession){if(session.mapId!==this.mapId)throw new Error('Replay pertence a outro mapa.');this.stop();this.closeReplay();const p=new RecordedTelemetryProvider(session);this.replayProvider=p;this.update({mode:'recorded',resources:structuredClone(session.resources??[]),vision:session.vision??false,mission:structuredClone(session.mission),replay:{offset:0,duration:p.duration,playing:false,rate:1,session}});this.replayUnsubscribe=subscribeToMap(p,this.mapId,frame=>{const until=session.startedAt+p.offset;const incidents=session.events.filter(e=>e.type==='Incident'&&e.timestamp<=until&&e.incident).map(e=>e.incident!);const unchanged=incidents.length===this.state.incidents.length&&incidents.every((item,index)=>item===this.state.incidents[index]);this.update({telemetry:frame,trail:session.frames.slice(0,p.index+1).map(f=>f.position),incidents:unchanged?this.state.incidents:incidents});});p.onCursor=()=>{this.update({replay:{offset:p.offset,duration:p.duration,playing:p.playing,rate:p.rate,session}});};void p.connect();p.seek(0);}
  closeReplay(){const wasReplay=this.state.mode==='recorded';this.replayUnsubscribe?.();this.replayUnsubscribe=null;if(this.replayProvider)void this.replayProvider.disconnect();this.replayProvider=null;this.update({mode:'simulation',replay:null,...(wasReplay?{telemetry:null,trail:[],status:'idle' as const}: {})});}
- dispose(){this.epoch++;this.stopHealth();this.closeReplay();this.endRecording();this.unsubscribe();void this.provider.disconnect();this.listeners.clear();this.disposed=true;}
+ dispose(){this.repositoryUnsubscribe();this.epoch++;this.stopHealth();this.closeReplay();this.endRecording();this.unsubscribe();void this.provider.disconnect();this.listeners.clear();this.disposed=true;}
 }
 
 

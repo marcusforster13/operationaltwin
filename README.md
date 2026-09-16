@@ -60,7 +60,7 @@ Instalação limpa, TypeScript e build passaram; 19 testes automatizados em 9 ar
 
 Escala métrica, orientação norte e datum de altitude permanecem pendentes; `fieldCalibrated=false`. Posições, velocidades e distâncias operacionais usam unidades locais. O offset BLOSM não é altitude absoluta. ETA é distância 3D/velocidade simulada, sem vias, obstáculos ou despacho automático. FOV/gimbal são ilustrativos.
 
-Sessões ficam na memória da aba (até 10); recarregar perde o histórico. Gravação limitada a 18.000 frames (~30 min a 10 Hz); trilha visual mostra até 10.000 pontos. Não há persistência remota, vídeo ou DJI real.
+Sessões encerradas ficam no IndexedDB deste navegador (até 10 por localidade). Aguarde a confirmação de salvamento antes de fechar. Gravações em andamento podem ser perdidas ao recarregar. Limpar os dados do navegador remove o histórico; não há sincronização entre dispositivos. Gravação limitada a 18.000 frames (~30 min a 10 Hz); trilha visual mostra até 10.000 pontos. Não há persistência remota, vídeo ou DJI real.
 
 Cantagalo tem 3,05 milhões de triângulos e 1.693 texturas. Nesta máquina foram observados aproximadamente 25–37 FPS, conforme câmera/qualidade. O debug estima memória; não mede VRAM exata. Se necessário, selecione qualidade Econômica. O chunk 3D de aproximadamente 658 KB gera aviso de tamanho no build; é carregado somente após escolher um mapa.
 
@@ -77,3 +77,11 @@ Salvar rascunho grava apenas neste navegador, por mapId; use Carregar salvo ao r
 O candidato NÃO altera o mapa operacional. A projeção horizontal usa o elipsoide WGS84 (h=0 matemático, não altitude medida), limitada a 20 km da origem documentada. Não resolve inclinação, deformações locais ou datum vertical. Validação de campo e altitude continuam pendentes; RMSE baixo não certifica precisão. A origem e a transformação do modelo fazem parte da identificação do referencial do rascunho.
 
 Validação desta etapa: 28 testes em 10 arquivos; TypeScript e build passaram. Navegador: captura de três pontos, salvar/carregar, ajuste com dados sintéticos explicitamente identificados e exportação/reimportação JSON passaram; console sem erros. Os dados sintéticos foram removidos da tela de teste.
+
+## Histórico persistente
+
+Ao encerrar a missão, a sessão é salva automaticamente no navegador. Após recarregar, abra a mesma localidade → Replay. O painel mostra o estado do armazenamento e permite exportar a sessão em JSON. Falhas de quota/permissão são sinalizadas; o replay permanece disponível em memória para exportação. A exportação é um backup estruturado; importação de sessões ainda não está disponível. Sessões antigas já perdidas antes desta versão não podem ser recuperadas.
+
+Validação: 33 testes em 11 arquivos, TypeScript e build aprovados. Inclui isolamento por mapa, retenção, cópia imutável, restauração, gravação durante carregamento e tratamento de falhas de armazenamento.
+
+Teste de navegador desta etapa: Demo Scenario 01 concluído (322 frames / 32,1 s), recarregamento completo, recuperação e abertura do replay, exportação JSON e Cantagalo sem sessões de Tabajaras. Console sem erros.
