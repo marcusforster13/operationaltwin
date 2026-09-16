@@ -3,6 +3,7 @@ import {RemoteSimulationProvider,backendUrl} from '../services/telemetry/RemoteS
 import {subscribeToMap} from '../services/telemetry/subscribeToMap';
 import {RecordedTelemetryProvider} from '../services/telemetry/RecordedTelemetryProvider';
 import {Recorder} from '../features/replay/Recorder';
+import {parseSessionBackup} from '../features/replay/sessionBackup';
 import {repositoryForController,type StorageStatus} from '../services/persistence/SessionRepository';
 import type {Mission,DroneTelemetry,Incident,Resource,RecordedSession} from '../types/domain';
 import type {Vec3} from '../types/maps';
@@ -31,6 +32,18 @@ export class OperationController{
 
  pause(){if(this.state.status!=='flying')return;this.recorder.event('Pause');this.provider.pause();}resume(){if(this.state.status!=='paused')return;this.recorder.event('Resume');this.provider.resume();}
  endRecording(){if(!this.state.recording)return;const session=this.recorder.stop();if(session)this.repository.save(session);this.update({recording:false,sessions:this.repository.list(this.mapId)});}
+ async importBackup(raw:string){
+  const session=parseSessionBackup(raw,this.mapId);
+  await this.repository.whenSettled();
+  if(this.disposed||this.state.recording||this.state.status==='flying'||this.state.status==='paused')throw new Error('Encerre a missão antes de restaurar uma sessão.');
+  if(this.repository.status==='error')throw new Error('Resolva a falha de armazenamento antes de importar.');
+  const existing=this.repository.list(this.mapId);
+  if(existing.some(s=>s.id===session.id))throw new Error('Esta sessão já existe. Nenhum registro foi substituído.');
+  if(existing.length>=10)throw new Error('Histórico completo: importação bloqueada para preservar as dez sessões existentes.');
+  this.repository.save(session);
+  await this.repository.whenSettled();
+  if(this.repository.status as StorageStatus==='error')throw new Error('Falha ao salvar a importação; a sessão está apenas em memória. Exporte o backup antes de sair.');
+ }
  stop(){this.epoch++;this.stopHealth();this.provider.stop();void this.provider.disconnect();const telemetry=this.state.telemetry?{...this.state.telemetry,speed:0,state:'completed' as const}:null;if(telemetry&&this.state.recording)this.recorder.frame(telemetry);this.endRecording();this.update({status:'completed',telemetry});}
  reset(){this.stop();this.update({telemetry:null,trail:[],status:'idle'});}
  openReplay(session:RecordedSession){if(session.mapId!==this.mapId)throw new Error('Replay pertence a outro mapa.');this.stop();this.closeReplay();const p=new RecordedTelemetryProvider(session);this.replayProvider=p;this.update({mode:'recorded',resources:structuredClone(session.resources??[]),vision:session.vision??false,mission:structuredClone(session.mission),replay:{offset:0,duration:p.duration,playing:false,rate:1,session}});this.replayUnsubscribe=subscribeToMap(p,this.mapId,frame=>{const until=session.startedAt+p.offset;const incidents=session.events.filter(e=>e.type==='Incident'&&e.timestamp<=until&&e.incident).map(e=>e.incident!);const unchanged=incidents.length===this.state.incidents.length&&incidents.every((item,index)=>item===this.state.incidents[index]);this.update({telemetry:frame,trail:session.frames.slice(0,p.index+1).map(f=>f.position),incidents:unchanged?this.state.incidents:incidents});});p.onCursor=()=>{this.update({replay:{offset:p.offset,duration:p.duration,playing:p.playing,rate:p.rate,session}});};void p.connect();p.seek(0);}

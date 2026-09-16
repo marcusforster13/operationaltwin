@@ -12,3 +12,7 @@ Solicitação do proprietário: manter esta validação pendente visível enquan
 - Manter fieldCalibrated=false e campos desconhecidos pendentes até validação documentada. Não liberar posicionamento operacional real com base apenas no centro/bounds.
 
 A simulação pode continuar. Não integrar o DJI real nesta etapa.
+
+## Compatibilidade de navegador
+
+- Brave: proprietário relatou falha de conexão com o backend, enquanto outro navegador funcionou. Causa ainda não confirmada; retomar diagnóstico posteriormente conforme solicitado. Não desativar proteções do navegador automaticamente.

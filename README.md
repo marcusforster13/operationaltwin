@@ -80,7 +80,7 @@ Validação desta etapa: 28 testes em 10 arquivos; TypeScript e build passaram. 
 
 ## Histórico persistente
 
-Ao encerrar a missão, a sessão é salva automaticamente no navegador. Após recarregar, abra a mesma localidade → Replay. O painel mostra o estado do armazenamento e permite exportar a sessão em JSON. Falhas de quota/permissão são sinalizadas; o replay permanece disponível em memória para exportação. A exportação é um backup estruturado; importação de sessões ainda não está disponível. Sessões antigas já perdidas antes desta versão não podem ser recuperadas.
+Ao encerrar a missão, a sessão é salva automaticamente no navegador. Após recarregar, abra a mesma localidade → Replay. O painel mostra o estado do armazenamento e permite exportar a sessão em JSON. Falhas de quota/permissão são sinalizadas; o replay permanece disponível em memória para exportação. Na aba Replay, selecione Importar sessão JSON, confira o resumo e confirme a restauração. O arquivo deve ser uma exportação de sessão simulada da mesma localidade (até 15 MiB). Sessões incompletas, duplicatas presentes no histórico carregado e importações com dez sessões existentes são rejeitadas. No modo remoto, a restauração é salva na conta autenticada; no modo local, neste navegador. Evite importar simultaneamente em várias abas. Sessões antigas já perdidas antes desta versão não podem ser recuperadas.
 
 Validação: 33 testes em 11 arquivos, TypeScript e build aprovados. Inclui isolamento por mapa, retenção, cópia imutável, restauração, gravação durante carregamento e tratamento de falhas de armazenamento.
 
@@ -110,3 +110,5 @@ Validação: `npm test`, `npm run test:backend`, `npm run build`. O teste HTTP v
 O backend pode usar Supabase Auth e PostgreSQL. Cada usuário acessa apenas localidades explicitamente concedidas, e cada sessão pertence ao usuário que a gravou. Tokens ficam em memória, com renovação durante o uso; recarregar exige novo login. Sair encerra a gravação e aguarda o salvamento. Rascunhos de calibração também são separados por usuário no navegador. O catálogo público dos GLBs não é um controle de acesso aos arquivos de mapa já publicados.
 
 Configuração gratuita e ativação: [CLOUD-DEPLOY.md](CLOUD-DEPLOY.md). O modo público recusa iniciar sem autenticação configurada. Não há chave service_role no aplicativo. Validação local inclui regras SQL em PostgreSQL via PGlite; a instalação no projeto Supabase DTT e o deploy real estão ativos. Consulte CLOUD-DEPLOY.md para os resultados da validação em produção.
+
+Validação de importação: 58 testes da aplicação e 4 de backend/SQL aprovados; TypeScript e build aprovados. Teste local de navegador com backup sintético: validação, confirmação, salvamento, recarga e abertura do replay recuperado; console sem erros/avisos.
