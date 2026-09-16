@@ -18,3 +18,17 @@ Limites: Render Free pode suspender o processo após inatividade e perder simula
 Testes locais: `npm test`, `npm run test:backend`, `npm run build`. O teste SQL usa PostgreSQL/PGlite com usuários sintéticos. Testes HTTP substituem somente a resposta externa de autenticação; a validação final do serviço Supabase exige o projeto real configurado.
 
 Validação do login: 40 testes da aplicação e 4 testes de backend/SQL passaram; TypeScript e build aprovados. No navegador, contas sintéticas verificaram login, recuperação de replay de 266 frames, logout e isolamento ao entrar como outro usuário, sem erros no console. Esses testes não substituem a validação do Supabase real após o deploy.
+
+## Implantação em 16/09/2026
+
+- Frontend: https://operationaltwin.vercel.app/ — produção conectada ao Render; deploy Vercel B9qbJY3bJi2uxhh19VSsQyozyMR5 aprovado.
+- API: https://operationaltwin-api.onrender.com — Render Free, Oregon, sem disco persistente; fonte Git 5476d30.
+- Banco: Supabase DTT; migração 001 aplicada e RLS confirmado nas duas tabelas twin_*. Proprietário autorizado para Tabajaras e Cantagalo.
+- Verificação remota: health 200, storage=supabase, authRequired=true; consulta de sessões sem token 401. Login real observado no navegador.
+- Produção autenticada: replay de Cantagalo abriu e reproduziu 94 frames / 39,9 s. Nova demo Tabajaras gravou 77 frames / 32,8 s; a consulta SQL confirmou a sessão no Supabase, junto das demais sessões de ambas as localidades. Console sem erros ou avisos nesta validação.
+- Cadastro público desativado e salvamento confirmado no Supabase. Após autorização do proprietário, RLS foi habilitado em players/payments e todos os privilégios diretos de PUBLIC, anon e authenticated foram revogados; dados preservados. Consulta posterior confirmou RLS=true e SELECT=false para anon/authenticated em ambas.
+- Demo Scenario 01 concluído: incidente, três recursos, cinco waypoints, gravação e replay automático. Após sair da localidade e reabrir Tabajaras, o histórico foi consultado novamente no servidor e o replay de 77 frames / 32,8 s foi recuperado. O segundo login foi validado posteriormente, conforme registro abaixo.
+
+- Auditoria no PostgreSQL real: transação com role authenticated e identidade sintética sem permissões retornou zero mapas e zero sessões; rollback executado. Isso testa as políticas RLS no banco, não substitui um segundo login real pela API.
+
+- Segundo login real em produção: teste-isolamento@example.com autenticou e exibiu "Nenhuma localidade autorizada", sem cartões de mapas e com demonstração desabilitada. A conta principal permaneceu autenticada com replay e duas sessões de Tabajaras acessíveis. Console do usuário de teste sem erros/avisos. Este teste valida o fluxo UI; não foi feita chamada HTTP direta com o token do segundo usuário.
