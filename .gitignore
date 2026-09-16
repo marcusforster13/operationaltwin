@@ -7,3 +7,5 @@ dist/
 
 # Large map assets are distributed separately.
 public/maps/**/*.glb
+
+server-data/

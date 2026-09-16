@@ -1,3 +1,4 @@
+import {backendUrl} from '../services/telemetry/RemoteSimulationProvider';
 import {CalibrationPanel} from '../features/calibration/CalibrationPanel';
 import {emptyDraft} from '../features/calibration/calibration';
 import {useEffect,useState,useSyncExternalStore,useRef} from 'react';
@@ -48,7 +49,7 @@ export function Workbench({map,onExit,autoDemo=false}:{map:OperationalMap;onExit
  };
  const loadError=(message:string)=>{controller.stop();controller.reportError(message);if(demoRunning)demo.fail(message);};
  return <>
-  <nav><button onClick={onExit}>← Localidades</button><strong>{map.name}</strong><span>mapId: {map.id}</span><button aria-pressed={tool==='navigate'} onClick={()=>setTool('navigate')}>Navegar</button><button disabled={!world||locked} aria-pressed={tool==='waypoint'} onClick={()=>{setTool('waypoint');setPanel('mission');}}>+ Waypoint</button><button disabled={!world||mode==='recorded'||demoRunning} aria-pressed={tool==='incident'} onClick={()=>{setTool('incident');setPanel('incident');}}>+ Incidente</button><span className="mode-label">{mode==='recorded'?'RECORDED / REPLAY':'SIMULATION / MOCK DATA'}</span></nav>
+  <nav><button onClick={onExit}>← Localidades</button><strong>{map.name}</strong><span>mapId: {map.id}</span><button aria-pressed={tool==='navigate'} onClick={()=>setTool('navigate')}>Navegar</button><button disabled={!world||locked} aria-pressed={tool==='waypoint'} onClick={()=>{setTool('waypoint');setPanel('mission');}}>+ Waypoint</button><button disabled={!world||mode==='recorded'||demoRunning} aria-pressed={tool==='incident'} onClick={()=>{setTool('incident');setPanel('incident');}}>+ Incidente</button><span className="mode-label">{mode==='recorded'?'RECORDED / REPLAY':backendUrl?'REMOTE SIMULATION / DADOS SIMULADOS':'SIMULATION / MOCK DATA'}</span></nav>
   {(autoDemo||demoState.stage!=='idle')&&<DemoPanel runner={demo} state={demoState}/>}
   <div className="workspace"><Viewport map={map} onReady={setWorld} onError={loadError} onPick={pick}/>
    <aside>

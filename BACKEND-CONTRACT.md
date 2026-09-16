@@ -24,3 +24,9 @@ O servidor deve validar autorização por localidade/aeronave, administrar crede
 5. Integrar vídeo/câmera apenas após telemetria e georreferenciamento validados.
 
 Fixtures de calibração nos testes são artificiais e restritas aos testes; os registros reais continuam pendentes.
+
+## Backend de desenvolvimento implementado
+
+`server/index.mjs` fornece `/health`, `GET/PUT /maps/:mapId/sessions`, `POST /maps/:mapId/simulations`, `GET /maps/:mapId/simulations/:id` e `POST /maps/:mapId/simulations/:id/command`. Comandos aceitos: pause, resume, stop e gimbal (yaw/pitch). Rotas contêm somente pontos locais de simulação. Corpo JSON limitado a 16 MiB. O adaptador `RemoteSimulationProvider` valida os frames pelo mesmo normalizador interno e mantém o modo simulation. Live continua bloqueado pela calibração.
+
+O servidor atual é restrito ao computador local. Antes de hospedá-lo, implementar autenticação/autorização por localidade, HTTPS, limites operacionais e armazenamento com backup. Nenhuma credencial DJI foi criada ou incorporada.

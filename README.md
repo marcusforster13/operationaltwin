@@ -85,3 +85,22 @@ Ao encerrar a missão, a sessão é salva automaticamente no navegador. Após re
 Validação: 33 testes em 11 arquivos, TypeScript e build aprovados. Inclui isolamento por mapa, retenção, cópia imutável, restauração, gravação durante carregamento e tratamento de falhas de armazenamento.
 
 Teste de navegador desta etapa: Demo Scenario 01 concluído (322 frames / 32,1 s), recarregamento completo, recuperação e abertura do replay, exportação JSON e Cantagalo sem sessões de Tabajaras. Console sem erros.
+
+## Backend local e simulação remota
+
+Em dois terminais, na pasta do projeto:
+
+```sh
+npm run backend
+npm run dev:remote
+```
+
+Abra http://127.0.0.1:5177 e execute a demonstração. A rota é enviada ao servidor, que gera telemetria simulada; gravação e replay usam o fluxo existente. Sessões encerradas são gravadas em `server-data/`, com até 10 por localidade, preservadas ao reiniciar o servidor. Esse diretório é excluído do Git e do deploy do frontend. Faça backup do diretório para conservar os históricos.
+
+`npm run dev` mantém o simulador e o histórico no navegador. `VITE_BACKEND_URL` configura o endereço público do backend (não é segredo); deixar vazio preserva o modo local. Os históricos do navegador e do servidor são separados, sem migração automática. A configuração remota vale para telemetria e sessões juntas.
+
+Variáveis do servidor: `BACKEND_PORT` (8787), `SESSION_DATA_DIR`, `FRONTEND_ORIGINS` (origens permitidas separadas por vírgula) e `MAP_IDS` (tabajaras,cantagalo). O servidor escuta exclusivamente em 127.0.0.1, rejeita Host/Origin inesperados e não possui autenticação multiusuário. NÃO é um serviço pronto para exposição pública. Publicação exige definir hospedagem com disco persistente, autenticação e HTTPS. O deploy atual da Vercel continua usando o modo local; não aponta para o computador do desenvolvedor.
+
+O transporte consulta HTTP sequencialmente, com intervalo de 100 ms após cada resposta; a taxa depende da latência. Não é WebSocket nem streaming DJI. Simulações sem acesso expiram após 2 minutos; perda de conexão sinaliza dados desatualizados. Uma simulação perdida exige iniciar uma nova sessão. Salvar exige servidor acessível; falhas mantêm o replay em memória para exportação. Não há sincronização instantânea de históricos entre abas; recarregue para consultar dados novos do servidor.
+
+Validação: `npm test`, `npm run test:backend`, `npm run build`. O teste HTTP verifica reinício do servidor, retenção, isolamento, rejeição de origem indevida e comandos simulados. O navegador concluiu Demo Scenario 01 remoto com 258 frames / 32,1 s e console sem erros.

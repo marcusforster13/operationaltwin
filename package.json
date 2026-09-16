@@ -9,7 +9,10 @@
     "build": "node scripts/check-assets.mjs && npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
-    "build:remote": "node scripts/check-assets.mjs --require-remote && npm run build"
+    "build:remote": "node scripts/check-assets.mjs --require-remote && npm run build",
+    "backend": "node server/index.mjs",
+    "test:backend": "node --test server/*.backend.mjs",
+    "dev:remote": "node scripts/dev-remote.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

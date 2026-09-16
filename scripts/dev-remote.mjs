@@ -1,0 +1,2 @@
+import {spawn} from 'node:child_process';
+const child=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5177','--strictPort'],{stdio:'inherit',env:{...process.env,VITE_BACKEND_URL:process.env.VITE_BACKEND_URL||'http://127.0.0.1:8787'}});child.on('exit',code=>process.exit(code??1));

@@ -1,3 +1,5 @@
+import {MAPS} from '../../config/maps';
+import {backendUrl,backendRequest} from '../telemetry/RemoteSimulationProvider';
 import type {RecordedSession} from '../../types/domain';
 export interface SessionStore{load():Promise<RecordedSession[]>;save(session:RecordedSession):Promise<void>;}
 export type StorageStatus='memory'|'loading'|'saving'|'saved'|'error';
@@ -23,5 +25,10 @@ export class IndexedDbSessionStore implements SessionStore{
  async load(){const db=await this.db;return new Promise<RecordedSession[]>((resolve,reject)=>{const tx=db.transaction('sessions','readonly'),request=tx.objectStore('sessions').getAll();tx.oncomplete=()=>resolve(request.result);tx.onabort=()=>reject(tx.error);tx.onerror=()=>reject(tx.error);});}
  async save(session:RecordedSession){const db=await this.db;return new Promise<void>((resolve,reject)=>{const tx=db.transaction('sessions','readwrite'),store=tx.objectStore('sessions');store.put(session);const all=store.getAll();all.onsuccess=()=>{const local=(all.result as RecordedSession[]).filter(s=>s.mapId===session.mapId).sort((a,b)=>a.startedAt-b.startedAt);for(const old of local.slice(0,Math.max(0,local.length-10)))store.delete([old.mapId,old.id]);};tx.oncomplete=()=>resolve();tx.onabort=()=>reject(tx.error);tx.onerror=()=>reject(tx.error);});}
 }
-function createRepository(){try{return new PersistentSessionRepository(typeof indexedDB==='undefined'?undefined:new IndexedDbSessionStore(indexedDB));}catch{return new PersistentSessionRepository({load:()=>Promise.reject(new Error('Armazenamento indisponível')),save:()=>Promise.reject(new Error('Armazenamento indisponível'))});}}
+export class BackendSessionStore implements SessionStore{
+ constructor(private base:string){}
+ async load(){return(await Promise.all(MAPS.map(map=>backendRequest(this.base,`/maps/${map.id}/sessions`)))).flat();}
+ async save(session:RecordedSession){await backendRequest(this.base,`/maps/${session.mapId}/sessions`,session,'PUT');}
+}
+function createRepository(){if(backendUrl)return new PersistentSessionRepository(new BackendSessionStore(backendUrl));try{return new PersistentSessionRepository(typeof indexedDB==='undefined'?undefined:new IndexedDbSessionStore(indexedDB));}catch{return new PersistentSessionRepository({load:()=>Promise.reject(new Error('Armazenamento indisponível')),save:()=>Promise.reject(new Error('Armazenamento indisponível'))});}}
 export const sessionRepository=createRepository();
