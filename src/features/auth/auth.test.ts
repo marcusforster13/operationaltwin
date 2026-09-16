@@ -1,0 +1,8 @@
+import {afterEach,it,expect,vi} from 'vitest';
+import {acceptAuth,authToken,authOwner,clearAuth,canAccessMap,login} from './auth';
+const data=(id='a',expires_in=3600)=>({access_token:'access-'+id,refresh_token:'refresh-'+id,expires_in,user:{id},allowedMapIds:['tabajaras']});
+afterEach(()=>{clearAuth();vi.unstubAllGlobals();});
+it('isolates requests by owner and map without browser storage',async()=>{acceptAuth(data());expect(canAccessMap('tabajaras')).toBe(true);expect(canAccessMap('cantagalo')).toBe(false);expect(await authToken('http://test','a')).toBe('access-a');acceptAuth(data('b'));await expect(authToken('http://test','a')).rejects.toThrow('alterada');clearAuth();expect(authOwner()).toBeUndefined();});
+it('serializes concurrent token refresh',async()=>{acceptAuth(data('a',1));const f=vi.fn(async()=>Response.json(data()));vi.stubGlobal('fetch',f);expect(await Promise.all([authToken('http://test','a'),authToken('http://test','a')])).toEqual(['access-a','access-a']);expect(f).toHaveBeenCalledOnce();});
+it('does not revive login after logout while response is pending',async()=>{let complete!:(r:Response)=>void;vi.stubGlobal('fetch',()=>new Promise<Response>(r=>{complete=r;}));const pending=login('http://test','test@example.invalid','synthetic');clearAuth();complete(Response.json(data()));await expect(pending).rejects.toThrow('cancelado');expect(authOwner()).toBeUndefined();});
+it('rejects expired refresh without sending unauthenticated operational requests',async()=>{acceptAuth(data('a',1));vi.stubGlobal('fetch',async()=>new Response('',{status:401}));await expect(authToken('http://test','a')).rejects.toThrow('expirada');});

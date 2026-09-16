@@ -99,8 +99,14 @@ Abra http://127.0.0.1:5177 e execute a demonstração. A rota é enviada ao serv
 
 `npm run dev` mantém o simulador e o histórico no navegador. `VITE_BACKEND_URL` configura o endereço público do backend (não é segredo); deixar vazio preserva o modo local. Os históricos do navegador e do servidor são separados, sem migração automática. A configuração remota vale para telemetria e sessões juntas.
 
-Variáveis do servidor: `BACKEND_PORT` (8787), `SESSION_DATA_DIR`, `FRONTEND_ORIGINS` (origens permitidas separadas por vírgula) e `MAP_IDS` (tabajaras,cantagalo). O servidor escuta exclusivamente em 127.0.0.1, rejeita Host/Origin inesperados e não possui autenticação multiusuário. NÃO é um serviço pronto para exposição pública. Publicação exige definir hospedagem com disco persistente, autenticação e HTTPS. O deploy atual da Vercel continua usando o modo local; não aponta para o computador do desenvolvedor.
+Variáveis do servidor: `BACKEND_PORT` (8787), `SESSION_DATA_DIR`, `FRONTEND_ORIGINS` (origens permitidas separadas por vírgula) e `MAP_IDS` (tabajaras,cantagalo). Sem Supabase, o servidor escuta exclusivamente em 127.0.0.1. O modo público exige Supabase, login e origens HTTPS explicitamente configuradas. Veja CLOUD-DEPLOY.md para o caminho gratuito e os passos de ativação. O deploy atual da Vercel continua usando o modo local; não aponta para o computador do desenvolvedor.
 
 O transporte consulta HTTP sequencialmente, com intervalo de 100 ms após cada resposta; a taxa depende da latência. Não é WebSocket nem streaming DJI. Simulações sem acesso expiram após 2 minutos; perda de conexão sinaliza dados desatualizados. Uma simulação perdida exige iniciar uma nova sessão. Salvar exige servidor acessível; falhas mantêm o replay em memória para exportação. Não há sincronização instantânea de históricos entre abas; recarregue para consultar dados novos do servidor.
 
 Validação: `npm test`, `npm run test:backend`, `npm run build`. O teste HTTP verifica reinício do servidor, retenção, isolamento, rejeição de origem indevida e comandos simulados. O navegador concluiu Demo Scenario 01 remoto com 258 frames / 32,1 s e console sem erros.
+
+## Login e Supabase
+
+O backend pode usar Supabase Auth e PostgreSQL. Cada usuário acessa apenas localidades explicitamente concedidas, e cada sessão pertence ao usuário que a gravou. Tokens ficam em memória, com renovação durante o uso; recarregar exige novo login. Sair encerra a gravação e aguarda o salvamento. Rascunhos de calibração também são separados por usuário no navegador. O catálogo público dos GLBs não é um controle de acesso aos arquivos de mapa já publicados.
+
+Configuração gratuita e ativação: [CLOUD-DEPLOY.md](CLOUD-DEPLOY.md). O modo público recusa iniciar sem autenticação configurada. Não há chave service_role no aplicativo. Validação local inclui regras SQL em PostgreSQL via PGlite; a instalação no projeto Supabase e o deploy real precisam ser validados após criar as contas.

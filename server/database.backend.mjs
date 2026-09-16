@@ -1,0 +1,23 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {PGlite} from '@electric-sql/pglite';
+test('PostgreSQL migration enforces owner/map access, private RPC and retention',async()=>{
+ const db=new PGlite();const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222';
+ try{await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated;insert into auth.users values('${a}'),('${b}');`);
+ await db.exec(await readFile(new URL('../supabase/migrations/001_private_sessions.sql',import.meta.url),'utf8'));
+ await db.exec(`insert into public.twin_map_access values('${a}','tabajaras'),('${b}','tabajaras'),('${b}','cantagalo');set role authenticated;set request.jwt.claim.sub='${a}';`);
+ const save=(map,id,n)=>db.query('select public.twin_save_session($1,$2::jsonb)',[map,JSON.stringify({id,mapId:map,mode:'simulation',startedAt:n,frames:[],events:[]})]);
+ for(let i=0;i<12;i++)await save('tabajaras','a'+i,i);
+ assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,10);
+ await assert.rejects(()=>save('cantagalo','blocked',1));
+ await assert.rejects(()=>db.exec("delete from public.twin_sessions"));
+ await assert.rejects(()=>db.exec(`insert into public.twin_map_access values('${a}','cantagalo')`));
+ await db.exec(`set request.jwt.claim.sub='${b}'`);
+ assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,0);
+ await save('tabajaras','b',1);assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,1);
+ await db.exec("reset role;set role anon;set request.jwt.claim.sub=''");
+ await assert.rejects(()=>db.query('select * from public.twin_sessions'));
+ await assert.rejects(()=>save('tabajaras','anonymous',1));
+ }finally{await db.close();}
+});

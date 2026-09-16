@@ -10,3 +10,5 @@ input[type=range]{width:100%;accent-color:#5adbea}.event-list{font:11px monospac
 .view-tools select{font-size:10px;width:auto;padding:4px;margin:0}.debug p{max-width:250px;font-size:10px}
 
 .calibration-panel .control-point{border:1px solid #38505d;padding:12px;margin:12px 0;border-radius:8px}.calibration-panel input{width:100%;box-sizing:border-box}.calibration-panel small{overflow-wrap:anywhere}.panel-tabs{flex-wrap:wrap}
+
+.auth-card{max-width:440px;margin:7vh auto;padding:24px}.auth-card input{width:100%;box-sizing:border-box}.auth-strip{display:flex;gap:16px;align-items:center;padding:8px 24px;background:#17313e}.auth-strip [role=alert]{color:#ffbf94}

@@ -1,7 +1,8 @@
+import {authOwner} from '../auth/auth';
 import {useRef,useState} from 'react';
 import type {OperationalMap} from '../../types/maps';
 import {calculate,emptyDraft,exportDraft,parseDraft,type Draft} from './calibration';
-export const storageKey=(map:OperationalMap)=>`operational-twin:calibration:v1:${map.id}`;
+export const storageKey=(map:OperationalMap)=>`operational-twin:calibration:v1:${authOwner()?authOwner()+':':''}${map.id}`;
 export function CalibrationPanel({map,draft,onChange,onPick,picking,disabled}:{map:OperationalMap;draft:Draft;onChange:(d:Draft)=>void;onPick:()=>void;picking:boolean;disabled:boolean}){
  const [message,setMessage]=useState(''),file=useRef<HTMLInputElement>(null);
  let result:ReturnType<typeof calculate>|null=null,problem='';

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: operationaltwin-api
+    runtime: node
+    plan: free
+    buildCommand: node --check server/index.mjs
+    startCommand: node server/index.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: BACKEND_PUBLIC
+        value: "true"
+      - key: FRONTEND_ORIGINS
+        value: https://operationaltwin.vercel.app
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
