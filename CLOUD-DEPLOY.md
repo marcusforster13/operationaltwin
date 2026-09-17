@@ -43,3 +43,6 @@ Validação do login: 40 testes da aplicação e 4 testes de backend/SQL passara
 
 ### Validação autenticada concluída — 17/09/2026
 Na interface publicada, a conta proprietária salvou um rascunho de Tabajaras (velocidade simulada 12 u/s, retorno à base ativo, 3 recursos, rota vazia). Após sair da localidade e reabri-la, Carregar rascunho recuperou a prévia remota e Substituir planejamento restaurou os valores, mantendo a missão parada. Nenhum erro de console registrado. Esse teste confirma persistência pela API/Supabase na mesma sessão; acesso a partir de outro navegador não foi testado nesta rodada. O rascunho de teste permanece disponível e pode ser substituído pelo planejamento do usuário.
+
+### Isolamento de planejamento — 17/09/2026
+Na conta autenticada, Cantagalo retornou “Nenhum rascunho salvo” enquanto Tabajaras tinha seu rascunho, confirmando a separação por localidade. Nenhum rascunho de Cantagalo foi criado. Durante a decodificação do GLB de Cantagalo, a aba deixou de responder ao controle do navegador; a tentativa de reconexão também expirou. Causa não confirmada; carregamento 3D desta rodada não validado. Investigar antes de declarar concluída a regressão dos dois mapas.

@@ -60,7 +60,7 @@ Instalação limpa, TypeScript e build passaram; 19 testes automatizados em 9 ar
 
 Escala métrica, orientação norte e datum de altitude permanecem pendentes; `fieldCalibrated=false`. Posições, velocidades e distâncias operacionais usam unidades locais. O offset BLOSM não é altitude absoluta. ETA é distância 3D/velocidade simulada, sem vias, obstáculos ou despacho automático. FOV/gimbal são ilustrativos.
 
-Sessões encerradas ficam no IndexedDB deste navegador (até 10 por localidade). Aguarde a confirmação de salvamento antes de fechar. Gravações em andamento podem ser perdidas ao recarregar. Limpar os dados do navegador remove o histórico; não há sincronização entre dispositivos. Gravação limitada a 18.000 frames (~30 min a 10 Hz); trilha visual mostra até 10.000 pontos. Não há persistência remota, vídeo ou DJI real.
+No modo local, sessões encerradas ficam no IndexedDB deste navegador (até 10 por localidade); no site publicado, ficam no Supabase por conta e localidade. Aguarde a confirmação de salvamento antes de fechar. Gravações em andamento podem ser perdidas ao recarregar. Limpar os dados do navegador remove apenas o histórico local. O histórico remoto pode ser recuperado ao entrar na mesma conta. Gravação limitada a 18.000 frames (~30 min a 10 Hz); trilha visual mostra até 10.000 pontos. Não há vídeo ou integração DJI real.
 
 Cantagalo tem 3,05 milhões de triângulos e 1.693 texturas. Nesta máquina foram observados aproximadamente 25–37 FPS, conforme câmera/qualidade. O debug estima memória; não mede VRAM exata. Se necessário, selecione qualidade Econômica. O chunk 3D de aproximadamente 658 KB gera aviso de tamanho no build; é carregado somente após escolher um mapa.
 
@@ -80,7 +80,7 @@ Validação desta etapa: 28 testes em 10 arquivos; TypeScript e build passaram. 
 
 ## Histórico persistente
 
-Ao encerrar a missão, a sessão é salva automaticamente no navegador. Após recarregar, abra a mesma localidade → Replay. O painel mostra o estado do armazenamento e permite exportar a sessão em JSON. Falhas de quota/permissão são sinalizadas; o replay permanece disponível em memória para exportação. Na aba Replay, selecione Importar sessão JSON, confira o resumo e confirme a restauração. O arquivo deve ser uma exportação de sessão simulada da mesma localidade (até 15 MiB). Sessões incompletas, duplicatas presentes no histórico carregado e importações com dez sessões existentes são rejeitadas. No modo remoto, a restauração é salva na conta autenticada; no modo local, neste navegador. Evite importar simultaneamente em várias abas. Sessões antigas já perdidas antes desta versão não podem ser recuperadas.
+Ao encerrar a missão, a sessão é salva automaticamente no armazenamento configurado: navegador no modo local, servidor no modo remoto. Após recarregar, abra a mesma localidade → Replay. O painel mostra o estado do armazenamento e permite exportar a sessão em JSON. Falhas de quota/permissão são sinalizadas; o replay permanece disponível em memória para exportação. Na aba Replay, selecione Importar sessão JSON, confira o resumo e confirme a restauração. O arquivo deve ser uma exportação de sessão simulada da mesma localidade (até 15 MiB). Sessões incompletas, duplicatas presentes no histórico carregado e importações com dez sessões existentes são rejeitadas. No modo remoto, a restauração é salva na conta autenticada; no modo local, neste navegador. Evite importar simultaneamente em várias abas. Sessões antigas já perdidas antes desta versão não podem ser recuperadas.
 
 Validação: 33 testes em 11 arquivos, TypeScript e build aprovados. Inclui isolamento por mapa, retenção, cópia imutável, restauração, gravação durante carregamento e tratamento de falhas de armazenamento.
 
@@ -115,9 +115,9 @@ Validação de importação: 58 testes da aplicação e 4 de backend/SQL aprovad
 
 ## Rascunho de planejamento
 
-Na aba Missão, use Salvar rascunho e Carregar rascunho. Há um rascunho por usuário/localidade neste navegador, com rota, recursos simulados e visão/gimbal. Salvar substitui o rascunho anterior; carregar mostra um resumo e exige confirmar a substituição do planejamento aberto. Não inicia missão. Ocorrências e gravações são independentes.
+Na aba Missão, use Salvar rascunho e Carregar rascunho. Há um rascunho por usuário/localidade, com rota, recursos simulados e visão/gimbal; no site publicado ele fica na nuvem, e no modo local fica neste navegador. Salvar substitui o rascunho anterior; carregar mostra um resumo e exige confirmar a substituição do planejamento aberto. Não inicia missão. Ocorrências e gravações são independentes.
 
-O rascunho não sincroniza com Supabase ou outros dispositivos. Limpar dados do navegador remove-o. A restauração valida os dados e a identificação do referencial do mapa; alterações de configuração geográfica invalidam rascunhos anteriores para evitar aplicar coordenadas locais incorretas.
+No modo remoto, o rascunho pode ser carregado em outro dispositivo com a mesma conta e permissão. Limpar dados do navegador remove somente os rascunhos locais. A restauração valida os dados e a identificação do referencial do mapa; alterações de configuração geográfica invalidam rascunhos anteriores para evitar aplicar coordenadas locais incorretas.
 
 Testes desta etapa: 66 testes da aplicação, TypeScript e build aprovados.
 Navegador: rascunho do cenário simulado salvo com 5 waypoints e 3 recursos; após recarregar, resumo conferido e planejamento restaurado sem iniciar missão. Console sem erros ou avisos.

@@ -16,3 +16,6 @@ A simulação pode continuar. Não integrar o DJI real nesta etapa.
 ## Compatibilidade de navegador
 
 - Brave: proprietário relatou falha de conexão com o backend, enquanto outro navegador funcionou. Causa ainda não confirmada; retomar diagnóstico posteriormente conforme solicitado. Não desativar proteções do navegador automaticamente.
+
+## Carregamento de Cantagalo — regressão de 17/09/2026
+A consulta de rascunho remoto funcionou, mas a aba deixou de responder durante a decodificação do GLB após sair de Tabajaras. Reconexão ao navegador expirou. Verificar consumo de memória e recuperação de carregamento; não atribuir a causa sem evidência. Não alterar escala, geometria ou georreferenciamento para contornar essa falha.
