@@ -121,3 +121,6 @@ O rascunho não sincroniza com Supabase ou outros dispositivos. Limpar dados do 
 
 Testes desta etapa: 66 testes da aplicação, TypeScript e build aprovados.
 Navegador: rascunho do cenário simulado salvo com 5 waypoints e 3 recursos; após recarregar, resumo conferido e planejamento restaurado sem iniciar missão. Console sem erros ou avisos.
+
+### Planejamento na nuvem
+Com backend configurado, Missão → Salvar rascunho guarda uma rota por conta/localidade no Supabase. Carregar rascunho mostra uma prévia antes de substituir o planejamento e não inicia a missão. Rascunhos antigos continuam acessíveis em “Carregar rascunho deste navegador”; restaure e salve para transferi-los à nuvem. Sem backend, o armazenamento continua local. Em edições simultâneas, prevalece o último salvamento. A migração `002_private_planning.sql` deve ser aplicada antes de publicar esta API.

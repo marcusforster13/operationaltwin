@@ -1,5 +1,6 @@
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {OperationController} from '../../app/OperationController';
+import {backendRequest,backendUrl} from '../../services/telemetry/RemoteSimulationProvider';
 import {authOwner} from '../auth/auth';
 import {getMap} from '../../config/maps';
 import type {Mission,Resource} from '../../types/domain';
@@ -22,12 +23,29 @@ export function parsePlanningDraft(raw:string,mapId:string):PlanningDraft{
 
 export function PlanningDraftPanel({controller,disabled}:{controller:OperationController;disabled:boolean}){
  const [pending,setPending]=useState<PlanningDraft|null>(null),[message,setMessage]=useState('');
- const key=planningKey(authOwner(),controller.mapId);
- const blocked=()=>disabled||controller.state.recording||controller.state.mode==='recorded'||['flying','paused'].includes(controller.state.status);
- return <section aria-label="Rascunho do planejamento"><h3>Rascunho do planejamento</h3><p>Um rascunho por conta e localidade, somente neste navegador. Inclui rota, recursos simulados e configuração de visão.</p>
- <button disabled={disabled} onClick={()=>{try{if(blocked())return;const s=controller.state;const draft:PlanningDraft={schema:'operational-twin-planning-v1',mapId:controller.mapId,reference:planningReference(controller.mapId),savedAt:Date.now(),mission:s.mission,resources:s.resources,vision:s.vision,yaw:s.yaw,pitch:s.pitch};const raw=JSON.stringify(draft);parsePlanningDraft(raw,controller.mapId);localStorage.setItem(key,raw);setPending(null);setMessage('Rascunho salvo neste navegador. O rascunho anterior desta localidade foi substituído.');}catch{setMessage('Não foi possível salvar o rascunho. Verifique os dados e o armazenamento do navegador.');}}}>Salvar rascunho</button>
- <button disabled={disabled} onClick={()=>{setPending(null);setMessage('');try{if(blocked())return;const raw=localStorage.getItem(key);if(!raw){setMessage('Nenhum rascunho salvo para esta conta e localidade.');return;}setPending(parsePlanningDraft(raw,controller.mapId));}catch{setMessage('Não foi possível carregar: arquivo inválido, referencial alterado ou armazenamento indisponível.');}}}>Carregar rascunho</button>
- {pending&&<><p>{new Date(pending.savedAt).toLocaleString('pt-BR')} · {pending.mission.waypoints.length} waypoints · {pending.resources.length} recursos. Substituir rota, recursos e visão atuais? Ocorrências e gravações não fazem parte do rascunho.</p><button disabled={disabled} onClick={()=>{if(blocked())return;controller.reset();controller.setMission(structuredClone(pending.mission));controller.setResources(structuredClone(pending.resources));controller.setVision(pending.vision,pending.yaw,pending.pitch);setPending(null);setMessage('Planejamento restaurado. A missão não foi iniciada.');}}>Substituir planejamento</button><button onClick={()=>setPending(null)}>Cancelar</button></>}
+ const owner=authOwner(),key=planningKey(owner,controller.mapId);
+ const [busy,setBusy]=useState(false);
+ const alive=useRef(true);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ const valid=()=>alive.current&&authOwner()===owner;
+ const path=`/maps/${encodeURIComponent(controller.mapId)}/planning`;
+ async function readDraft(local=false){
+  if(blocked())return;setBusy(true);setPending(null);setMessage('');
+  try{
+   const data=backendUrl&&!local?await backendRequest(backendUrl,path,undefined,'GET',undefined,owner):null;
+   const raw=backendUrl&&!local?(data===null?null:JSON.stringify(data)):localStorage.getItem(key);
+   if(!valid())return;
+   if(raw)setPending(parsePlanningDraft(raw,controller.mapId));else setMessage('Nenhum rascunho salvo para esta conta e localidade.');
+  }catch{if(valid())setMessage('Não foi possível carregar o rascunho. Verifique a conexão e a compatibilidade com esta localidade.');}
+  finally{if(valid())setBusy(false);}
+ }
+ const blocked=()=>disabled||busy||controller.state.recording||controller.state.mode==='recorded'||['flying','paused'].includes(controller.state.status);
+ return <section aria-label="Rascunho do planejamento"><h3>Rascunho do planejamento</h3><p>Um rascunho por conta e localidade, {backendUrl?'salvo na nuvem':'somente neste navegador'}. Inclui rota, recursos simulados e configuração de visão.</p>
+ <button disabled={blocked()} onClick={async()=>{if(blocked())return;setBusy(true);try{const s=controller.state;const draft:PlanningDraft={schema:'operational-twin-planning-v1',mapId:controller.mapId,reference:planningReference(controller.mapId),savedAt:Date.now(),mission:s.mission,resources:s.resources,vision:s.vision,yaw:s.yaw,pitch:s.pitch};const raw=JSON.stringify(draft);parsePlanningDraft(raw,controller.mapId);if(backendUrl)await backendRequest(backendUrl,path,draft,'PUT',undefined,owner);else localStorage.setItem(key,raw);if(!valid())return;setPending(null);setMessage('Rascunho salvo '+(backendUrl?'na nuvem':'neste navegador')+'. O rascunho anterior desta localidade foi substituído.');}catch{if(valid())setMessage('Não foi possível salvar o rascunho. Verifique a conexão e o armazenamento.');}finally{if(valid())setBusy(false);}}}>Salvar rascunho</button>
+ <button disabled={blocked()} onClick={()=>void readDraft()}>Carregar rascunho</button>
+ {backendUrl&&<button disabled={blocked()} onClick={()=>void readDraft(true)}>Carregar rascunho deste navegador</button>}
+ {busy&&<p role="status">Acessando rascunho…</p>}
+ {pending&&<><p>{new Date(pending.savedAt).toLocaleString('pt-BR')} · {pending.mission.waypoints.length} waypoints · {pending.resources.length} recursos. Substituir rota, recursos e visão atuais? Ocorrências e gravações não fazem parte do rascunho.</p><button disabled={blocked()} onClick={()=>{if(blocked()||!valid())return;controller.reset();controller.setMission(structuredClone(pending.mission));controller.setResources(structuredClone(pending.resources));controller.setVision(pending.vision,pending.yaw,pending.pitch);setPending(null);setMessage('Planejamento restaurado. A missão não foi iniciada.');}}>Substituir planejamento</button><button onClick={()=>setPending(null)}>Cancelar</button></>}
  {message&&<p role="status">{message}</p>}
  </section>;
 }
