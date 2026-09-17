@@ -32,3 +32,14 @@ Validação do login: 40 testes da aplicação e 4 testes de backend/SQL passara
 - Auditoria no PostgreSQL real: transação com role authenticated e identidade sintética sem permissões retornou zero mapas e zero sessões; rollback executado. Isso testa as políticas RLS no banco, não substitui um segundo login real pela API.
 
 - Segundo login real em produção: teste-isolamento@example.com autenticou e exibiu "Nenhuma localidade autorizada", sem cartões de mapas e com demonstração desabilitada. A conta principal permaneceu autenticada com replay e duas sessões de Tabajaras acessíveis. Console do usuário de teste sem erros/avisos. Este teste valida o fluxo UI; não foi feita chamada HTTP direta com o token do segundo usuário.
+
+## Planejamento na nuvem — 17/09/2026
+- Migração 002 aplicada no DTT; RLS ativa, leitura/escrita anônimas negadas.
+- API publicada no Render: b3f65db, deploy dep-daluj1nqj5pc73dmbpbg (Live).
+- Interface publicada na Vercel: 869c92a, deployment success.
+- 66 testes frontend + 4 backend aprovados; TypeScript/build aprovados. Restauração local validada pela interface, sem iniciar missão e sem erros de console.
+- API em produção: health 200 e planejamento sem login 401.
+- PENDENTE: salvar/carregar pela interface autenticada em produção; aba disponível permanece na tela de login. Não considerar essa validação ponta a ponta concluída.
+
+### Validação autenticada concluída — 17/09/2026
+Na interface publicada, a conta proprietária salvou um rascunho de Tabajaras (velocidade simulada 12 u/s, retorno à base ativo, 3 recursos, rota vazia). Após sair da localidade e reabri-la, Carregar rascunho recuperou a prévia remota e Substituir planejamento restaurou os valores, mantendo a missão parada. Nenhum erro de console registrado. Esse teste confirma persistência pela API/Supabase na mesma sessão; acesso a partir de outro navegador não foi testado nesta rodada. O rascunho de teste permanece disponível e pode ser substituído pelo planejamento do usuário.
