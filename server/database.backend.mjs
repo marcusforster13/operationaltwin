@@ -6,7 +6,13 @@ test('PostgreSQL migration enforces owner/map access, private RPC and retention'
  const db=new PGlite();const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222';
  try{await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated;insert into auth.users values('${a}'),('${b}');`);
  await db.exec(await readFile(new URL('../supabase/migrations/001_private_sessions.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/002_private_planning.sql',import.meta.url),'utf8'));
  await db.exec(`insert into public.twin_map_access values('${a}','tabajaras'),('${b}','tabajaras'),('${b}','cantagalo');set role authenticated;set request.jwt.claim.sub='${a}';`);
+ const draft={schema:'operational-twin-planning-v1',mapId:'tabajaras'};
+ await db.query('insert into twin_planning values($1,$2,$3)',[a,'tabajaras',draft]);
+ await assert.rejects(()=>db.query('insert into twin_planning values($1,$2,$3)',[b,'tabajaras',draft]));
+ await assert.rejects(()=>db.query('insert into twin_planning values($1,$2,$3)',[a,'cantagalo',{...draft,mapId:'cantagalo'}]));
+ assert.equal((await db.query('select * from twin_planning')).rows.length,1);
  const save=(map,id,n)=>db.query('select public.twin_save_session($1,$2::jsonb)',[map,JSON.stringify({id,mapId:map,mode:'simulation',startedAt:n,frames:[],events:[]})]);
  for(let i=0;i<12;i++)await save('tabajaras','a'+i,i);
  assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,10);
@@ -15,9 +21,13 @@ test('PostgreSQL migration enforces owner/map access, private RPC and retention'
  await assert.rejects(()=>db.exec(`insert into public.twin_map_access values('${a}','cantagalo')`));
  await db.exec(`set request.jwt.claim.sub='${b}'`);
  assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,0);
+ assert.equal((await db.query('select * from twin_planning')).rows.length,0);
+ assert.equal((await db.query('update twin_planning set payload=$1 returning *',[draft])).rows.length,0);
  await save('tabajaras','b',1);assert.equal((await db.query('select count(*)::int as n from public.twin_sessions')).rows[0].n,1);
  await db.exec("reset role;set role anon;set request.jwt.claim.sub=''");
  await assert.rejects(()=>db.query('select * from public.twin_sessions'));
+ await assert.rejects(()=>db.query('select * from public.twin_planning'));
+ await assert.rejects(()=>db.query('insert into twin_planning values($1,$2,$3)',[a,'tabajaras',draft]));
  await assert.rejects(()=>save('tabajaras','anonymous',1));
  }finally{await db.close();}
 });

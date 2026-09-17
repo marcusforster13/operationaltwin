@@ -3,11 +3,18 @@ import assert from 'node:assert/strict';
 import {createBackend} from './index.mjs';
 import {HttpError,SupabaseService} from './supabase.mjs';
 test('authenticated HTTP routes reject missing access and isolate simulation ownership',async()=>{
- const store=new Map();const cloud={authenticate:async header=>{if(!['Bearer a','Bearer b'].includes(header))throw new HttpError(401,'Login necessário');return{userId:header.slice(7),maps:new Set(['tabajaras'])};},list:async(map,u)=>store.get(u.userId)||[],save:async(s,u)=>store.set(u.userId,[s]),login:async()=>({}),logout:async()=>{}};
+ const plans=new Map();const store=new Map();const cloud={loadPlanning:async(m,u)=>plans.get(u.userId+':'+m)??null,savePlanning:async(d,u)=>plans.set(u.userId+':'+d.mapId,d),...{authenticate:async header=>{if(!['Bearer a','Bearer b'].includes(header))throw new HttpError(401,'Login necessário');return{userId:header.slice(7),maps:new Set(['tabajaras'])};},list:async(map,u)=>store.get(u.userId)||[],save:async(s,u)=>store.set(u.userId,[s]),login:async()=>({}),logout:async()=>{}}};
  const server=createBackend({cloud});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
  const call=(path,user,body,method=body?'POST':'GET')=>fetch(base+path,{method,headers:{'Content-Type':'application/json',...(user?{Authorization:`Bearer ${user}`}:{})},body:body?JSON.stringify(body):undefined});
  try{assert.equal((await call('/maps/tabajaras/sessions')).status,401);assert.equal((await call('/maps/cantagalo/sessions','a')).status,403);
  const s={id:'s',mapId:'tabajaras',mode:'simulation',startedAt:1,endedAt:2,mission:{mapId:'tabajaras',waypoints:[]},frames:[],events:[]};assert.equal((await call('/maps/tabajaras/sessions','a',s,'PUT')).status,200);assert.deepEqual(await(await call('/maps/tabajaras/sessions','b')).json(),[]);
+ const draft={schema:'operational-twin-planning-v1',mapId:'tabajaras',reference:'test',savedAt:1,yaw:0,pitch:0,vision:false,mission:{id:'m',mapId:'tabajaras',speed:1,returnToBase:true,waypoints:[]},resources:[]};
+ assert.equal((await call('/maps/tabajaras/planning')).status,401);
+ assert.equal((await call('/maps/cantagalo/planning','a')).status,403);
+ assert.equal((await call('/maps/tabajaras/planning','a',draft,'PUT')).status,200);
+ assert.deepEqual(await(await call('/maps/tabajaras/planning','a')).json(),draft);
+ assert.equal(await(await call('/maps/tabajaras/planning','b')).json(),null);
+ assert.equal((await call('/maps/tabajaras/planning','a',{...draft,mapId:'cantagalo'},'PUT')).status,400);
  const run=await(await call('/maps/tabajaras/simulations','a',{route:[{x:0,y:0,z:0},{x:10,y:0,z:0}],speed:1})).json();assert.equal((await call(`/maps/tabajaras/simulations/${run.id}`,'b')).status,404);assert.equal((await call(`/maps/tabajaras/simulations/${run.id}/command`,'b',{command:'stop'})).status,404);
  }finally{await new Promise(r=>server.close(r));}
 });

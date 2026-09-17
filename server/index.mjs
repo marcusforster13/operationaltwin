@@ -1,4 +1,5 @@
 import {SupabaseService,HttpError} from './supabase.mjs';
+import {validatePlanning} from './planning.mjs';
 import http from 'node:http';
 import {mkdir,readFile,readdir,writeFile,rename,unlink} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
@@ -30,6 +31,11 @@ export function createBackend({cloud=null,hosts=null,directory=resolve('server-d
    const user=cloud?await cloud.authenticate(req.headers.authorization):{userId:'local',maps};
    if(cloud&&req.method==='POST'&&url.pathname==='/auth/logout'){await cloud.logout(user);return send(200,{ok:true});}
    const mapId=parts[1];if(parts[0]!=='maps'||!maps.has(mapId))return send(404,{error:'Localidade desconhecida.'});if(!user.maps.has(mapId))return send(403,{error:'Sem permissão para esta localidade.'});
+   if(parts[2]==='planning'&&parts.length===3){
+    const dir=join(directory,'planning'),target=join(dir,mapId+'.json');
+    if(req.method==='GET'){if(cloud)return send(200,await cloud.loadPlanning(mapId,user));try{return send(200,JSON.parse(await readFile(target,'utf8')));}catch(e){if(e.code==='ENOENT')return send(200,null);throw e;}}
+    if(req.method==='PUT'){const draft=validatePlanning(await body(1024*1024),mapId);if(cloud)await cloud.savePlanning(draft,user);else{const operation=writes.then(async()=>{await mkdir(dir,{recursive:true});const temp=target+'.'+randomUUID()+'.tmp';await writeFile(temp,JSON.stringify(draft));await rename(temp,target);});writes=operation.catch(()=>{});await operation;}return send(200,{saved:true});}
+   }
    if(parts[2]==='sessions'&&parts.length===3){
     if(req.method==='GET'){await writes;return send(200,cloud?await cloud.list(mapId,user):await list(mapId));}
     if(req.method==='PUT'){const s=validateSession(await body(),mapId);if(cloud){await cloud.save(s,user);return send(200,{saved:true,id:s.id});}const operation=writes.then(async()=>{const dir=join(directory,mapId);await mkdir(dir,{recursive:true});const target=join(dir,filename(s)),temp=target+'.'+randomUUID()+'.tmp';await writeFile(temp,JSON.stringify(s));await rename(temp,target);const sessions=await list(mapId);for(const old of sessions.slice(0,Math.max(0,sessions.length-10)))await unlink(join(dir,filename(old)));});writes=operation.catch(()=>{});await operation;return send(200,{saved:true,id:s.id});}
