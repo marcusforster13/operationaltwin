@@ -1,3 +1,4 @@
+import {PlanningDraftPanel} from '../features/mission/PlanningDraft';
 import {backendUrl} from '../services/telemetry/RemoteSimulationProvider';
 import {CalibrationPanel} from '../features/calibration/CalibrationPanel';
 import {emptyDraft} from '../features/calibration/calibration';
@@ -64,7 +65,7 @@ export function Workbench({map,onExit,autoDemo=false}:{map:OperationalMap;onExit
     <div className="panel-tabs" role="tablist" aria-label="Módulos">{[['mission','Missão'],['incident','Ocorrências'],['replay','Replay'],['calibration','Calibração']].map(([id,title])=><button role="tab" key={id} aria-selected={panel===id} onClick={()=>{setPanel(id);setTool('navigate');}}>{title}</button>)}</div>
     <fieldset disabled={demoRunning}>
      {panel==='calibration'&&<CalibrationPanel map={map} draft={draft} onChange={setDraft} onPick={()=>setTool(tool==='calibration'?'navigate':'calibration')} picking={tool==='calibration'} disabled={!world||locked}/>}
-     {panel==='mission'&&<MissionPanel mission={mission} onChange={controller.setMission} disabled={locked}/>}
+     {panel==='mission'&&<><MissionPanel mission={mission} onChange={controller.setMission} disabled={locked}/><PlanningDraftPanel controller={controller} disabled={locked}/></>}
      {panel==='incident'&&<><label>Prioridade<select aria-label="Prioridade do incidente" value={priority} onChange={e=>setPriority(e.target.value as typeof priority)}><option>alta</option><option>média</option><option>baixa</option></select></label><IncidentPanel incidents={incidents} resources={resources} telemetry={telemetry}/></>}
      {panel==='replay'&&<ReplayPanel controller={controller} replay={replay} sessions={sessions} disabled={recording}/>}
      <details className="vision-panel"><summary>DRONE VISION · {vision?'ATIVO':'INATIVO'} · FOV SIMULADO</summary><label className="check"><input type="checkbox" checked={vision} onChange={e=>controller.setVision(e.target.checked)}/>Ativar Drone Vision</label><label>Gimbal yaw: {yaw}°<input disabled={mode==='recorded'} aria-label="Gimbal yaw" type="range" min="-180" max="180" value={yaw} onChange={e=>controller.setVision(vision,Number(e.target.value),pitch)}/></label><label>Gimbal pitch: {pitch}°<input disabled={mode==='recorded'} aria-label="Gimbal pitch" type="range" min="-90" max="0" value={pitch} onChange={e=>controller.setVision(vision,yaw,Number(e.target.value))}/></label></details>

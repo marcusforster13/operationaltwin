@@ -112,3 +112,12 @@ O backend pode usar Supabase Auth e PostgreSQL. Cada usuário acessa apenas loca
 Configuração gratuita e ativação: [CLOUD-DEPLOY.md](CLOUD-DEPLOY.md). O modo público recusa iniciar sem autenticação configurada. Não há chave service_role no aplicativo. Validação local inclui regras SQL em PostgreSQL via PGlite; a instalação no projeto Supabase DTT e o deploy real estão ativos. Consulte CLOUD-DEPLOY.md para os resultados da validação em produção.
 
 Validação de importação: 58 testes da aplicação e 4 de backend/SQL aprovados; TypeScript e build aprovados. Teste local de navegador com backup sintético: validação, confirmação, salvamento, recarga e abertura do replay recuperado; console sem erros/avisos.
+
+## Rascunho de planejamento
+
+Na aba Missão, use Salvar rascunho e Carregar rascunho. Há um rascunho por usuário/localidade neste navegador, com rota, recursos simulados e visão/gimbal. Salvar substitui o rascunho anterior; carregar mostra um resumo e exige confirmar a substituição do planejamento aberto. Não inicia missão. Ocorrências e gravações são independentes.
+
+O rascunho não sincroniza com Supabase ou outros dispositivos. Limpar dados do navegador remove-o. A restauração valida os dados e a identificação do referencial do mapa; alterações de configuração geográfica invalidam rascunhos anteriores para evitar aplicar coordenadas locais incorretas.
+
+Testes desta etapa: 66 testes da aplicação, TypeScript e build aprovados.
+Navegador: rascunho do cenário simulado salvo com 5 waypoints e 3 recursos; após recarregar, resumo conferido e planejamento restaurado sem iniciar missão. Console sem erros ou avisos.
